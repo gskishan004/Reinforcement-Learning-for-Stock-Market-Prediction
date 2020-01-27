@@ -9,7 +9,11 @@ from stable_baselines import PPO2
 
 from modules.findUnique 	import findUniqueStocks
 from modules.findUnique 	import findUniqueTargets
+from modules.stockModels	import findConstantModelsList
 from env.ModelSelectionEnv 	import ModelSelectionEnv
+
+#Turn this to 1 for debugging info, later put this in config
+debugging_flag = 1
 
 
 df = pd.read_csv('./data/data.csv')
@@ -23,8 +27,12 @@ print("Number of Unique Targets: ", len(targetList))
 STOCK_NAME          = "FAST"
 TARGET_NAME         = "1P28D"
 
+modelList = findConstantModelsList(df,STOCK_NAME, TARGET_NAME,debugging_flag)
+print("STOCK_NAME:",STOCK_NAME,"TARGET_NAME:",TARGET_NAME, "modelList:",modelList)
+if(len(modelList)==0):
+	print("Data not suitable for the selected stock as no common list of models accross all the dates could be found")
 
-env = DummyVecEnv([lambda: ModelSelectionEnv(df,STOCK_NAME,TARGET_NAME)])
+env = DummyVecEnv([lambda: ModelSelectionEnv(df,STOCK_NAME,TARGET_NAME, modelList)])
 
 
 

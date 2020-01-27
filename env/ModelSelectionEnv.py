@@ -6,18 +6,6 @@ import numpy as np
 import math
 
 
-'''
-To-Do:
-Change the definition of done
-Initial check for consistency in frame shape
-Add a safety feature where there cant be 0 models in the list
-
-Fixed
-		- problems in some global and self variables like model_dict, current_eval_date
-27 Jan 	- making code more modular by taking target name and stock name as params to the class 
-
-'''
-
 MAX_REWARD          = 2147483647
 ALL_DATES           = []
 MODEL_DICT          = {} 
@@ -27,7 +15,7 @@ CURRENT_EVAL_DATE   = ""
 class ModelSelectionEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, STOCK_NAME,TARGET_NAME):
+    def __init__(self, df, STOCK_NAME,TARGET_NAME,modelList):
 
         super(ModelSelectionEnv, self).__init__()
 
@@ -35,7 +23,9 @@ class ModelSelectionEnv(gym.Env):
         self.df             = df
         self.reward_range   = (0, MAX_REWARD)
         self.df             = df[(df['ticker'] == STOCK_NAME) & (df['target_name'] == TARGET_NAME )]
-        unique_modelid      = self.df['modelid'].unique()
+        unique_modelid      = modelList
+        
+        #It is a possibilty that every model is not run on all days
         N_DISCRETE_ACTIONS  = len(unique_modelid) 
         self.MAX_STEPS      = len(self.df['eval_date'].unique())        #for first run, max_steps = 29
         self.CURRENT_REWARD = 0
