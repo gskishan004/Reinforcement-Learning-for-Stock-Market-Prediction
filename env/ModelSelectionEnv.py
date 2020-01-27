@@ -7,39 +7,37 @@ import math
 
 
 '''
-            To-Do
-------------------------------
-
+To-Do:
 Change the definition of done
+Initial check for consistency in frame shape
+Add a safety feature where there cant be 0 models in the list
 
 Fixed
-- problems in some global and self variables like model_dict, current_eval_date 
+		- problems in some global and self variables like model_dict, current_eval_date
+27 Jan 	- making code more modular by taking target name and stock name as params to the class 
 
 '''
 
-
-STOCK_NAME          = "FAST"
-TARGET_NAME         = "1P28D"
 MAX_REWARD          = 2147483647
 ALL_DATES           = []
 MODEL_DICT          = {} 
 CURRENT_MODELS      = []
 CURRENT_EVAL_DATE   = ""
-MAX_STEPS           = 0
 
 class ModelSelectionEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df):
-        global MAX_STEPS
+    def __init__(self, df, STOCK_NAME,TARGET_NAME):
 
         super(ModelSelectionEnv, self).__init__()
+
+        self.TARGET_NAME 	= TARGET_NAME
         self.df             = df
         self.reward_range   = (0, MAX_REWARD)
         self.df             = df[(df['ticker'] == STOCK_NAME) & (df['target_name'] == TARGET_NAME )]
         unique_modelid      = self.df['modelid'].unique()
         N_DISCRETE_ACTIONS  = len(unique_modelid) 
-        MAX_STEPS           = len(self.df['eval_date'].unique())        #for first run, max_steps = 29
+        self.MAX_STEPS      = len(self.df['eval_date'].unique())        #for first run, max_steps = 29
         self.CURRENT_REWARD = 0
 
         """
@@ -122,7 +120,7 @@ class ModelSelectionEnv(gym.Env):
                 current_target_val  = int(df[(df['modelid'] == int(model)) & (df['eval_date'] == CURRENT_EVAL_DATE )]["target_val"].iloc[0])
 
             
-                if "_" in TARGET_NAME:
+                if "_" in self.TARGET_NAME:
                     if current_target_val == 0:
                         self.CURRENT_REWARD += math.pow(MAX_REWARD, current_probability)
                     else:
@@ -134,16 +132,15 @@ class ModelSelectionEnv(gym.Env):
                         self.CURRENT_REWARD -= math.pow(MAX_REWARD, current_probability)
 
     def step(self, action):
-        global MAX_STEPS
 
         self._take_action(action)
 
         self.current_step += 1
 
-        if self.current_step > MAX_STEPS :
+        if self.current_step > self.MAX_STEPS :
             self.current_step = 0
 
-        delay_modifier = (self.current_step / MAX_STEPS)
+        delay_modifier = (self.current_step / self.MAX_STEPS)
 
         reward = self.CURRENT_REWARD*delay_modifier
 

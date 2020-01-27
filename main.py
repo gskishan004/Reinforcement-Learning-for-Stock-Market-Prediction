@@ -14,15 +14,22 @@ from env.ModelSelectionEnv 	import ModelSelectionEnv
 
 df = pd.read_csv('./data/data.csv')
 
-env = DummyVecEnv([lambda: ModelSelectionEnv(df)])
 stocksList = findUniqueStocks(df)
 targetList = findUniqueTargets(df)
-
 print("Number of Unique Stocks: ", len(stocksList))
 print("Number of Unique Targets: ", len(targetList))
 
+
+STOCK_NAME          = "FAST"
+TARGET_NAME         = "1P28D"
+
+
+env = DummyVecEnv([lambda: ModelSelectionEnv(df,STOCK_NAME,TARGET_NAME)])
+
+
+
 model = PPO2(MlpPolicy, env, verbose=1)
-model.learn(total_timesteps=20)
+model.learn(total_timesteps=28)
 
 obs = env.reset()
 for i in range(26):
