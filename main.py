@@ -3,47 +3,116 @@ import json
 import datetime as dt
 import pandas as pd
 
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import PPO2
+import argparse
+import datetime
 
-from modules.findUnique 	import findUniqueStocks
-from modules.findUnique 	import findUniqueTargets
-from modules.stockModels	import findConstantModelsList
-from env.ModelSelectionEnv 	import ModelSelectionEnv
+from stable_baselines.common.policies 	import MlpPolicy
+from stable_baselines.common.policies 	import MlpLstmPolicy
+from stable_baselines.common.policies 	import MlpLnLstmPolicy
+from stable_baselines.common.policies 	import CnnPolicy
+from stable_baselines.common.policies 	import CnnLstmPolicy
+from stable_baselines.common.policies 	import CnnLnLstmPolicy
+
+from stable_baselines.common.vec_env 	import DummyVecEnv
+from stable_baselines 					import PPO2
+
+from env.securities_trading_env import securities_trading_env
 
 #Turn this to 1 for debugging info, later put this in config
 debugging_flag = 1
 
 
-df = pd.read_csv('./data/data.csv')
+# ask price is the lowest price that seller would sell
+# bid price is the highest price that buyer would pay
+df = pd.read_csv('data/concat.csv')
 
-stocksList = findUniqueStocks(df)
-targetList = findUniqueTargets(df)
-print("Number of Unique Stocks: ", len(stocksList))
-print("Number of Unique Targets: ", len(targetList))
+env = DummyVecEnv([lambda: securities_trading_env(df)])
+
+'''
+Stable baselines framework
+==========================
+
+Policies:
+---------
+MlpPolicy		Policy object that implements actor critic, using a MLP (2 layers of 64)
+MlpLstmPolicy	Policy object that implements actor critic, using LSTMs with a MLP feature extraction
+MlpLnLstmPolicy	Policy object that implements actor critic, using a layer normalized LSTMs with a MLP feature extraction
+CnnPolicy		Policy object that implements actor critic, using a CNN (the nature CNN)
+CnnLstmPolicy	Policy object that implements actor critic, using LSTMs with a CNN feature extraction
+CnnLnLstmPolicy	Policy object that implements actor critic, using a layer normalized LSTMs with a CNN feature extraction
+
+Optimization algorithm:
+------------------
+PP02			combines ideas from A2C (having multiple workers) and TRPO (it uses a trust region to improve the actor).
+
+'''
+
+#If no policy is defined, defaulting to MlpLstmPolicy as data is timeseries
 
 
-STOCK_NAME          = "FAST"
-TARGET_NAME         = "1P28D"
+import argparse
+parser = argparse.ArgumentParser()
 
-modelList = findConstantModelsList(df,STOCK_NAME, TARGET_NAME,debugging_flag)
-print("STOCK_NAME:",STOCK_NAME,"TARGET_NAME:",TARGET_NAME, "modelList:",modelList)
-if(len(modelList)==0):
-	print("Data not suitable for the selected stock as no common list of models accross all the dates could be found")
+#-p MlpLstmPolicy -a PP02 
+parser.add_argument("-p", "--policy", 	dest = "policy", 		default = "MlpPolicy", 	help="RL Policy")
+parser.add_argument("-a", "--algorithm",dest = "algorithm", 	default = "PP02", 		help="Optimization algorithm")
+parser.add_argument("-t", "--testSize", dest = "size", 			default = 50, 			help="Test Size")
+parser.add_argument("-l", "--load",  	dest = "loadFlag", 		default = "no_path", 	help="Only load the model")
+parser.add_argument("-v", "--verbose",  dest = "verboseFlag", 	default = 1, 			help="Flag for verbose either 1 or 0")
 
-env = DummyVecEnv([lambda: ModelSelectionEnv(df,STOCK_NAME,TARGET_NAME, modelList)])
 
+args = parser.parse_args()
 
+datenow = datetime.datetime.now().strftime("%I%M%p-%d%B%Y")
 
-model = PPO2(MlpPolicy, env, verbose=1)
-model.learn(total_timesteps=28)
+print(args.loadFlag)
 
-obs = env.reset()
-for i in range(26):
-    action, _states = model.predict(obs)
-    obs, rewards, done, info = env.step(action)
-    env.render()
+if (args.loadFlag == "no_path"):
 
-#model.load("./save/cartpole-dqn.h5"
-model.save("./save/model_save.h5")
+	if (args.policy == "MlpPolicy"):
+		model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
+		model.learn(total_timesteps=950)
+		obs = env.reset()
+
+		for i in range(args.size):
+		    action, _states = model.predict(obs)
+		    obs, rewards, done, info = env.step(action)
+		    env.render()
+
+		model_save = "./save/MlpPolicy"+"-"+datenow+".h5"
+		print("Model saved as: ",model_save)
+		model.save(model_save)
+
+	elif (args.policy == "MlpLstmPolicy"):
+		model = PPO2(MlpLstmPolicy, env, verbose=int(args.verboseFlag))
+		model.learn(total_timesteps=950)
+		obs = env.reset()
+
+		for i in range(args.size):
+		    action, _states = model.predict(obs)
+		    obs, rewards, done, info = env.step(action)
+		    env.render()
+
+		print("Model saved as: ", "./save/MlpLstmPolicy"+datenow+".h5")
+		model.save("save/MlpLstmPolicy"+datenow+".h5")
+
+else:
+	if (args.policy == "MlpPolicy"):
+		model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
+		model.load(args.loadFlag)
+		obs = env.reset()
+
+		for i in range(args.size):
+		    action, _states = model.predict(obs)
+		    obs, rewards, done, info = env.step(action)
+		    env.render()
+
+	elif (args.policy == "MlpLstmPolicy"):
+		model = PPO2(MlpLstmPolicy, env, verbose=int(args.verboseFlag))
+		model.load(args.loadFlag)
+		obs = env.reset()
+
+		for i in range(args.size):
+		    action, _states = model.predict(obs)
+		    obs, rewards, done, info = env.step(action)
+		    env.render()
