@@ -14,10 +14,17 @@ askPriceList        = []
 bidPriceList        = []
 debug               = 1
 
+
+bid_price_columns   = [1,21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361,381,401,421,441,461,481]
+ask_price_columns   = [3,23,43,63,83,103,123,143,163,183,203,223,243,263,283,303,323,343,363,383,403,423,443,463,483]
+
 class securities_trading_env(gym.Env):
+
     metadata = {'render.modes': ['human']}
 
     def __init__(self, df):
+
+        global bid_price_columns, ask_price_columns
 
         super(securities_trading_env, self).__init__()
 
@@ -31,9 +38,9 @@ class securities_trading_env(gym.Env):
 
         
         # 25 columns of L1 bid price
-        df_bidPrice = df[df.columns[[1,21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361,381,401,421,441,461,481]]]
+        df_bidPrice = df[df.columns[bid_price_columns]]
         # 25 columns of L1 ask price
-        df_askPrice = df[df.columns[[3,23,43,63,83,103,123,143,163,183,203,223,243,263,283,303,323,343,363,383,403,423,443,463,483]]]
+        df_askPrice = df[df.columns[ask_price_columns]]
 
         for data in df_askPrice["L1ask_price"]:
             askPriceList.append(data)
@@ -133,7 +140,7 @@ class securities_trading_env(gym.Env):
 
 
     def reset(self):
-        global askPriceList, bidPriceList, current_money
+        global askPriceList, bidPriceList, current_money, bid_price_columns, ask_price_columns
 
         self.CURRENT_REWARD     = 0
         self.current_step       = 0
@@ -145,9 +152,9 @@ class securities_trading_env(gym.Env):
         bidPriceList            = []
 
         # 25 columns of L1 bid price
-        df_bidPrice = df[df.columns[[1,21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361,381,401,421,441,461,481]]]
+        df_bidPrice = df[df.columns[bid_price_columns]]
         # 25 columns of L1 ask price
-        df_askPrice = df[df.columns[[3,23,43,63,83,103,123,143,163,183,203,223,243,263,283,303,323,343,363,383,403,423,443,463,483]]]
+        df_askPrice = df[df.columns[ask_price_columns]]
 
 
         for data in df_askPrice["L1ask_price"]:

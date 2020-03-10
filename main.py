@@ -1,10 +1,10 @@
 import gym
 import json
-import datetime as dt
-import pandas as pd
-
 import argparse
 import datetime
+
+import datetime as dt
+import pandas as pd
 
 from stable_baselines.common.policies 	import MlpPolicy
 from stable_baselines.common.policies 	import MlpLstmPolicy
@@ -16,15 +16,15 @@ from stable_baselines.common.policies 	import CnnLnLstmPolicy
 from stable_baselines.common.vec_env 	import DummyVecEnv
 from stable_baselines 					import PPO2
 
-from env.securities_trading_env import securities_trading_env
-
-#Turn this to 1 for debugging info, later put this in config
-debugging_flag = 1
+from env.securities_trading_env 		import securities_trading_env
 
 
 # ask price is the lowest price that seller would sell
 # bid price is the highest price that buyer would pay
-df = pd.read_csv('data/concat.csv')
+
+data_file = 'data/concat.csv'
+
+df = pd.read_csv(data_file)
 
 env = DummyVecEnv([lambda: securities_trading_env(df)])
 

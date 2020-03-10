@@ -1,4 +1,4 @@
-# Reinforcement Learning for trading sccurities#
+# Reinforcement Learning for trading sccurities
 
 
 For more details contact: ishan.khanka@gmail.com
