@@ -2,6 +2,7 @@ import gym
 import json
 import argparse
 import datetime
+import configparser 
 
 import datetime as dt
 import pandas as pd
@@ -12,21 +13,11 @@ from stable_baselines.common.policies 	import MlpLnLstmPolicy
 from stable_baselines.common.policies 	import CnnPolicy
 from stable_baselines.common.policies 	import CnnLstmPolicy
 from stable_baselines.common.policies 	import CnnLnLstmPolicy
-
 from stable_baselines.common.vec_env 	import DummyVecEnv
 from stable_baselines 					import PPO2
 
 from env.securities_trading_env 		import securities_trading_env
 
-
-# ask price is the lowest price that seller would sell
-# bid price is the highest price that buyer would pay
-
-data_file = 'data/concat.csv'
-
-df = pd.read_csv(data_file)
-
-env = DummyVecEnv([lambda: securities_trading_env(df)])
 
 '''
 Stable baselines framework
@@ -48,15 +39,21 @@ PP02			combines ideas from A2C (having multiple workers) and TRPO (it uses a tru
 '''
 
 #If no policy is defined, defaulting to MlpLstmPolicy as data is timeseries
+config = configparser.ConfigParser()
+config.read('config.ini')
 
+data_file 		= config['MAIN']['Data']
+test_steps 		= int(config['MAIN']['TestSize'])
+train_steps 	= int(config['MAIN']['TrainSize'])
+no_of_agents 	= int(config['MAIN']['BotNumber'])
 
-import argparse
 parser = argparse.ArgumentParser()
+df = pd.read_csv(data_file)
+env = DummyVecEnv([lambda: securities_trading_env(df)])
 
 #-p MlpLstmPolicy -a PP02 
 parser.add_argument("-p", "--policy", 	dest = "policy", 		default = "MlpPolicy", 	help="RL Policy")
 parser.add_argument("-a", "--algorithm",dest = "algorithm", 	default = "PP02", 		help="Optimization algorithm")
-parser.add_argument("-t", "--testSize", dest = "size", 			default = 50, 			help="Test Size")
 parser.add_argument("-l", "--load",  	dest = "loadFlag", 		default = "no_path", 	help="Only load the model")
 parser.add_argument("-v", "--verbose",  dest = "verboseFlag", 	default = 1, 			help="Flag for verbose either 1 or 0")
 
@@ -71,10 +68,10 @@ if (args.loadFlag == "no_path"):
 
 	if (args.policy == "MlpPolicy"):
 		model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
-		model.learn(total_timesteps=950)
+		model.learn(total_timesteps=train_steps)
 		obs = env.reset()
 
-		for i in range(args.size):
+		for i in range(test_steps):
 		    action, _states = model.predict(obs)
 		    obs, rewards, done, info = env.step(action)
 		    env.render()
@@ -85,10 +82,10 @@ if (args.loadFlag == "no_path"):
 
 	elif (args.policy == "MlpLstmPolicy"):
 		model = PPO2(MlpLstmPolicy, env, verbose=int(args.verboseFlag))
-		model.learn(total_timesteps=950)
+		model.learn(total_timesteps=train_steps)
 		obs = env.reset()
 
-		for i in range(args.size):
+		for i in range(test_steps):
 		    action, _states = model.predict(obs)
 		    obs, rewards, done, info = env.step(action)
 		    env.render()
@@ -102,7 +99,7 @@ else:
 		model.load(args.loadFlag)
 		obs = env.reset()
 
-		for i in range(args.size):
+		for i in range(test_steps):
 		    action, _states = model.predict(obs)
 		    obs, rewards, done, info = env.step(action)
 		    env.render()
@@ -112,7 +109,7 @@ else:
 		model.load(args.loadFlag)
 		obs = env.reset()
 
-		for i in range(args.size):
+		for i in range(test_steps):
 		    action, _states = model.predict(obs)
 		    obs, rewards, done, info = env.step(action)
 		    env.render()

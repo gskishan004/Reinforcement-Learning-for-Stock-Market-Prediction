@@ -1,22 +1,30 @@
 import random
 import gym
 import math
+import configparser 
 import pandas   as pd
 import numpy    as np
 from   gym      import spaces
 
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-MAX_REWARD          = 9999999999
-starting_money      = 100000.0
-current_money       = 100000.0
-actions             = ['buy','sell']
+
+MAX_REWARD          = int(config['ENV']['MaximumReward'])
+starting_money      = float(config['ENV']['StartingMoney'])
+bid_price_columns   = list(map(int,config['ENV']['ColumnsOfBidPrice'].split(',')))
+ask_price_columns   = list(map(int,config['ENV']['ColumnsOfAskPrice'].split(',')))
+current_money       = float(config['ENV']['StartingMoney'])
+actions             = ['buy','sell','hold']
 askPriceList        = []
 bidPriceList        = []
 debug               = 1
+obsSpace            = int(config['ENV']['ObservationSpace'])
+initial_flag        = True 
+old_data            = np.empty((0,2), float)
 
 
-bid_price_columns   = [1,21,41,61,81,101,121,141,161,181,201,221,241,261,281,301,321,341,361,381,401,421,441,461,481]
-ask_price_columns   = [3,23,43,63,83,103,123,143,163,183,203,223,243,263,283,303,323,343,363,383,403,423,443,463,483]
+print (ask_price_columns)
 
 class securities_trading_env(gym.Env):
 
@@ -64,28 +72,38 @@ class securities_trading_env(gym.Env):
         if (N_DISCRETE_ACTIONS == 0): print("ERROR in Finding N_DISCRETE_ACTIONS")
 
         self.action_space   = spaces.MultiDiscrete([N_DISCRETE_ACTIONS])
-
-
-        #Observation Space: agent will only see ask price and bid price 
-        self.observation_space = spaces.Box(
-            low=0, high=1, shape=(N_DISCRETE_ACTIONS, 2), dtype=np.float64)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(obsSpace, 2), dtype=np.float64)
 
 
     def _next_observation(self):
 
-        global askPriceList, bidPriceList
-
-        frame   = np.empty((0,2), float)
+        global askPriceList, bidPriceList, initial_flag, old_data
         df      = self.df
+
+        if(initial_flag):
+            for _ in range(obsSpace-1):
+                curr_askPrice  = askPriceList.pop(0)
+                curr_bidPrice  = bidPriceList.pop(0)
+                old_data = np.append(old_data, np.array([[curr_askPrice,curr_bidPrice]]), axis=0)
+
+            initial_flag = False
+
+        frame = np.empty((0,2), float)
+
+        if (obsSpace != 1):
+            frame   = old_data
+            old_data = np.delete(old_data, (0), axis=0)
+
 
         curr_askPrice  = askPriceList.pop(0)
         curr_bidPrice  = bidPriceList.pop(0)
 
         self.current_askPrice   = curr_askPrice
         self.current_bidPrice   = curr_bidPrice
-
-
         frame = np.append(frame, np.array([[curr_askPrice,curr_bidPrice]]), axis=0)
+
+        if (obsSpace != 1):
+            old_data = np.append(old_data, np.array([[curr_askPrice,curr_bidPrice]]), axis=0)
 
 
         return frame
@@ -94,7 +112,7 @@ class securities_trading_env(gym.Env):
 
         global  current_money, actions, starting_money
 
-        buy_or_sell  = action  #1 or 2
+        buy_or_sell  = action  #1 or 2 or 3
 
         if(debug ==1):
             print("Action is :", actions[buy_or_sell[0]])
@@ -109,6 +127,12 @@ class securities_trading_env(gym.Env):
             #that means the action is sell
             current_money += self.current_bidPrice 
             self.current_held_sec -=1
+            self.CURRENT_REWARD = math.pow(10000000, current_money/starting_money)
+
+        elif buy_or_sell == 2:
+            #that means the action is hold
+            #current_money      - remains unchanged 
+            #current_held_sec   - remains unchanged
             self.CURRENT_REWARD = math.pow(10000000, current_money/starting_money)
 
         else:
@@ -140,20 +164,20 @@ class securities_trading_env(gym.Env):
 
 
     def reset(self):
-        global askPriceList, bidPriceList, current_money, bid_price_columns, ask_price_columns
+        global askPriceList, bidPriceList, current_money, bid_price_columns, ask_price_columns, initial_flag, old_data
 
         self.CURRENT_REWARD     = 0
         self.current_step       = 0
         current_money           = starting_money
         df                      = self.df
-
         self.current_held_sec   = 0
         askPriceList            = []
         bidPriceList            = []
+        initial_flag            = True
+        old_data                = np.empty((0,2), float)
 
-        # 25 columns of L1 bid price
+
         df_bidPrice = df[df.columns[bid_price_columns]]
-        # 25 columns of L1 ask price
         df_askPrice = df[df.columns[ask_price_columns]]
 
 
