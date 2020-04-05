@@ -14,21 +14,21 @@ For more details contact: ishan.khanka@gmail.com
 
 
 ### Flag Information
-* "-p", "--policy"	default = "MlpPolicy" 	--> RL Policy
-* "-a", "--algorithm"	default = "PP02"		--> Optimization algorithm
 * "-l", "--load"		default = "no_path" 	--> Only load the model
-* "-v", "--verbose"	default = 1				--> Flag for verbose either 1 or 0
+* "-v", "--verbose"		default = 1				--> Flag for verbose either 1 or 0
 
 ### To-Do:
 * general-
-	* Add more params to reward function 
-	* Add more policies to the list - Currenly working policy is MLPPolicy
+	* reward = net worth ?
+	* add a feature to run multiple bots
 * env-
 	* Add Connection to RabbitMQ
 
 
 ### Fixed/ Done
 * general-
+	* Moved policy to config file
+	* Added TF3
 	* Added option to start agent with a specified observation window in config.ini
 	* Added config.ini to reduce the number of flags 
 	* Added Hold Option
@@ -39,3 +39,6 @@ For more details contact: ishan.khanka@gmail.com
 
 
 Parent GitHub Link for archives and version control: https://github.com/gskishan004/Reinforcement-Learning-for-trading-securities
+
+### Common errors
+* MPI : https://stackoverflow.com/questions/14004457/error-loading-mpi-dll-in-mpi4py
